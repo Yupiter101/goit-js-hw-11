@@ -1,4 +1,5 @@
 console.log('Hello HW-11');
+// console.log('Autoscroll from second page');
 
 import axios from "axios";
 const throttle = require('lodash.throttle');
@@ -19,7 +20,7 @@ const apiParams = {
     q: '',                        // search 
     image_type: 'photo',
     page: 1,                      // current page default
-    per_page: 8,                  // item on page default
+    per_page: 16,                  // item on page default
     orientation: 'horizontal',
     safesearch: true,
 }
@@ -32,7 +33,6 @@ let maxPages = 1;
 let firstSubmitFlag = true;
 let autoLoadFlag = false;
 // /служебные
-
 
 
 
@@ -55,6 +55,7 @@ function onSubmit(event) {
     
     if(!apiParams.q) {
         console.log('Field is empty. Please try again');
+        Notify.warning('Field is empty. Please try again');
         return
     }
     galleryEl.innerHTML = '';
@@ -76,8 +77,6 @@ function onSubmit(event) {
 
 
 
-
-
 // ===== fetch ApiServer V3 axios =======
 
 async function getApiServer(searchName, page) {
@@ -92,15 +91,19 @@ async function getApiServer(searchName, page) {
 
         if(!data.hits.length) {
             console.log("Sorry, there are no images matching your search query. Please try again.");
+            Notify.warning('orry, there are no images matching your search query. Please try again.');
             return
         }
         maxPages = Math.ceil(data.totalHits / apiParams.per_page);
-        console.log('maxPages = ', maxPages);
+        // console.log('maxPages = ', maxPages);
         makeGalery(data.hits);
 
         if(firstSubmitFlag) {
             firstSubmitFlag = false;
             console.log(`Hooray! We found ${data.totalHits} images.`);
+            console.log('Autoscroll from second page');
+            Notify.success(`Hooray! We found ${data.totalHits} images.`);
+            Notify.info('Autoscroll from second page');
         }
         
     }
@@ -144,7 +147,7 @@ function makeGalery(items) {
 
     galleryEl.insertAdjacentHTML("beforeend", markap);
     setTimeout( onShowLoadMoreBtn, 500); // setTimeout появление кнопки
-    console.log('page: ', apiParams.page);
+    // console.log('page: ', apiParams.page);
 
     //  === simplelightbox === 
         lightbox.refresh(); // Next Image
@@ -152,13 +155,6 @@ function makeGalery(items) {
             console.log('листай ще');
         });
     //  === simplelightbox === 
-
-    // // const { height: cardHeight } = document
-    // const werwer = document.querySelector(".gallery")
-    // .firstElementChild.getBoundingClientRect();
-    // console.log(werwer);
-
-  
 }
 // ===== / Render HTML ======
 
@@ -184,6 +180,7 @@ function onLoadMore() {
     apiParams.page +=1;
     getApiServer(apiParams.q, apiParams.page);
     autoLoadFlag = true;
+    // console.log('Autoscroll is ON');
 }
 
 
@@ -193,6 +190,54 @@ function onShowLoadMoreBtn() {
         loadMoreBtn.disabled = true;
         loadMoreBtn.textContent = 'The end';
         console.log("We're sorry, but you've reached the end of search results.");
+        Notify.warning("We're sorry, but you've reached the end of search results.");
     }
 }
 // ==== / Load More ======
+
+
+// ====== SCROLL ====== 
+
+// console.log('rere');
+
+let currentScroll = window.scrollY; 
+    
+window.addEventListener('scroll', throttle(onScroll, 500));
+
+let flag = 0;
+function onScroll() {
+            
+    const viewportHeight = window.innerHeight;      // Высота экрана
+    let pageHeight = document.documentElement.scrollHeight;
+    const availableScroll = pageHeight - viewportHeight; // Доступный скролл
+    currentScroll = scrollY;           // Текущее положение прокрутки     
+    const eventScroll = availableScroll - viewportHeight / 2; //Точка вызова события
+            
+    if(currentScroll > eventScroll) {
+        if(flag || !autoLoadFlag) {
+            return
+        }
+        else {
+            flag = 1;
+            console.log('Loaded page: ', apiParams.page);
+            onLoadMore();
+            // document.body.style.backgroundColor = 'red';
+        }
+                
+    }
+
+    else {
+        if(flag) {
+            flag = 0;
+        }
+    }
+    
+    // console.log('viewportHeight', viewportHeight);
+    // console.log('pageHeight', pageHeight);
+    // console.log('availableScroll', availableScroll);
+    // console.log('currentScroll', currentScroll);
+    // console.log('eventScroll', eventScroll);
+    // console.log('scroll');
+    
+}
+
